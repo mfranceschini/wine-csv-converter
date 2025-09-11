@@ -118,6 +118,88 @@ def convert_csv_to_json(df):
     
     return wines
 
+def create_full_json_structure(wines_data):
+    """Create the complete JSON structure with wines, steaks, and sommelier suggestions"""
+    
+    # Static steak data
+    steaks_data = [
+        {
+            "id": 2009,
+            "name": "Short Rib Angus",
+            "producer": "Puro Taglio",
+            "cutType": "Short Rib",
+            "originCountry": "Brasil",
+            "breed": "Angus",
+            "tasteDescription": "",
+            "price": 0,
+            "referralId": 2009
+        },
+        {
+            "id": 2026,
+            "name": "Prime Rib Angus",
+            "producer": "Puro Taglio",
+            "cutType": "Prime Rib",
+            "originCountry": "Brasil",
+            "breed": "Angus",
+            "tasteDescription": "",
+            "price": 0,
+            "referralId": 2026
+        },
+        {
+            "id": 2013,
+            "name": "T-Bone Steak Angus",
+            "producer": "Puro Taglio",
+            "cutType": "T-Bone Steak",
+            "originCountry": "Brasil",
+            "breed": "Angus",
+            "tasteDescription": "",
+            "price": 0,
+            "referralId": 2013
+        },
+        {
+            "id": 2004,
+            "name": "Flat Iron Angus",
+            "producer": "Puro Taglio",
+            "cutType": "Flat Iron",
+            "originCountry": "Brasil",
+            "breed": "Angus",
+            "tasteDescription": "",
+            "price": 0,
+            "referralId": 2004
+        }
+    ]
+    
+    # Static sommelier suggestions data
+    sommelier_suggestions = [
+        {
+            "name": "Kit Executivo - 10% OFF",
+            "wineId": 3760245210066,
+            "steakId": 2009,
+            "id": "executivo"
+        },
+        {
+            "name": "Kit Elegante - 15% OFF",
+            "wineId": 7798145140141,
+            "steakId": 2026,
+            "id": "elegante"
+        },
+        {
+            "name": "Kit Premium - 15% OFF",
+            "wineId": 8052080990001,
+            "steakId": 2013,
+            "id": "premium"
+        }
+    ]
+    
+    # Create the complete structure
+    complete_data = {
+        "wine": wines_data,
+        "steak": steaks_data,
+        "sommelierSuggestions": sommelier_suggestions
+    }
+    
+    return complete_data
+
 # Streamlit App
 def main():
     st.set_page_config(
@@ -151,34 +233,62 @@ def main():
             if st.button("🔄 Convert to JSON", type="primary"):
                 with st.spinner("Converting CSV to JSON..."):
                     wines_data = convert_csv_to_json(df)
+                    complete_data = create_full_json_structure(wines_data)
                 
                 st.success(f"✅ Conversion complete! {len(wines_data)} wines converted.")
+                st.info(f"📦 Added {len(complete_data['steak'])} steaks and {len(complete_data['sommelierSuggestions'])} sommelier suggestions.")
                 
-                # Show preview of JSON
-                with st.expander("👀 Preview JSON (First 2 wines)", expanded=True):
-                    preview_data = wines_data[:2] if len(wines_data) >= 2 else wines_data
-                    st.json(preview_data)
+                # Show preview of JSON structure
+                with st.expander("👀 Preview JSON Structure", expanded=True):
+                    # Show structure overview
+                    st.markdown("### JSON Structure:")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("🍷 Wines", len(complete_data['wine']))
+                    with col2:
+                        st.metric("🥩 Steaks", len(complete_data['steak']))
+                    with col3:
+                        st.metric("👨‍🍳 Suggestions", len(complete_data['sommelierSuggestions']))
+                    
+                    # Show sample of each section
+                    st.markdown("### Sample Data:")
+                    
+                    # Wine sample
+                    st.markdown("**Wine (first 2 items):**")
+                    wine_sample = complete_data['wine'][:2] if len(complete_data['wine']) >= 2 else complete_data['wine']
+                    st.json({"wine": wine_sample})
+                    
+                    # Steak sample
+                    st.markdown("**Steak (all items):**")
+                    st.json({"steak": complete_data['steak']})
+                    
+                    # Sommelier suggestions sample
+                    st.markdown("**Sommelier Suggestions (all items):**")
+                    st.json({"sommelierSuggestions": complete_data['sommelierSuggestions']})
                 
                 # Download button
-                json_string = json.dumps(wines_data, indent=2, ensure_ascii=False)
+                json_string = json.dumps(complete_data, indent=2, ensure_ascii=False)
                 
                 st.download_button(
                     label="💾 Download JSON File",
                     data=json_string,
-                    file_name="wines_converted.json",
+                    file_name="appData.json",
                     mime="application/json"
                 )
                 
-                # Show statistics
-                col1, col2, col3 = st.columns(3)
+                # Show detailed statistics
+                st.markdown("### 📊 Data Summary")
+                col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("Total Wines", len(wines_data))
+                    st.metric("🍷 Total Wines", len(wines_data))
                 with col2:
                     countries = set(wine['originCountry'] for wine in wines_data if wine['originCountry'])
-                    st.metric("Countries", len(countries))
+                    st.metric("🌍 Countries", len(countries))
                 with col3:
                     producers = set(wine['producer'] for wine in wines_data if wine['producer'])
-                    st.metric("Producers", len(producers))
+                    st.metric("🏭 Producers", len(producers))
+                with col4:
+                    st.metric("📊 Total Items", len(complete_data['wine']) + len(complete_data['steak']) + len(complete_data['sommelierSuggestions']))
         
         except Exception as e:
             st.error(f"❌ Error processing file: {str(e)}")
@@ -211,11 +321,30 @@ def main():
         - `tasteDescription` - Wine description (string)
         
         ### Output Format:
-        The JSON will have proper data types:
+        The JSON will have a complete structure with three main sections:
+        
+        **Wine Data:** (from your CSV)
         - Numbers for `id`, `referralId`, `harvest`, and `alcoholLevel`
         - Strings for text fields
         - `null` for `price` and `importedBy`
         - Line breaks preserved in `harmonization` field
+        
+        **Steak Data:** (static data)
+        - 4 predefined steak cuts from Puro Taglio
+        - Includes: Short Rib, Prime Rib, T-Bone Steak, Flat Iron
+        
+        **Sommelier Suggestions:** (static data)
+        - 3 predefined wine & steak pairing kits
+        - Includes: Kit Executivo, Kit Elegante, Kit Premium
+        
+        **Final JSON Structure:**
+        ```json
+        {
+          "wine": [your wine data],
+          "steak": [steak data],
+          "sommelierSuggestions": [pairing suggestions]
+        }
+        ```
         """)
 
 if __name__ == "__main__":
